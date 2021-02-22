@@ -353,21 +353,41 @@ public class ChargePointRepositoryImpl implements ChargePointRepository {
 
     private void updateChargePointInternal(DSLContext ctx, ChargePointForm form, Integer addressPk) {
         ctx.update(CHARGE_BOX)
-           .set(CHARGE_BOX.DESCRIPTION, form.getDescription())
-           .set(CHARGE_BOX.LOCATION_LATITUDE, form.getLocationLatitude())
-           .set(CHARGE_BOX.LOCATION_LONGITUDE, form.getLocationLongitude())
-           .set(CHARGE_BOX.INSERT_CONNECTOR_STATUS_AFTER_TRANSACTION_MSG, form.getInsertConnectorStatusAfterTransactionMsg())
-           .set(CHARGE_BOX.REGISTRATION_STATUS, form.getRegistrationStatus())
-           .set(CHARGE_BOX.NOTE, form.getNote())
-           .set(CHARGE_BOX.ADMIN_ADDRESS, form.getAdminAddress())
-           .set(CHARGE_BOX.ADDRESS_PK, addressPk)
-           .where(CHARGE_BOX.CHARGE_BOX_PK.equal(form.getChargeBoxPk()))
-           .execute();
+                .set(CHARGE_BOX.DESCRIPTION, form.getDescription())
+                .set(CHARGE_BOX.LOCATION_LATITUDE, form.getLocationLatitude())
+                .set(CHARGE_BOX.LOCATION_LONGITUDE, form.getLocationLongitude())
+                .set(CHARGE_BOX.INSERT_CONNECTOR_STATUS_AFTER_TRANSACTION_MSG, form.getInsertConnectorStatusAfterTransactionMsg())
+                .set(CHARGE_BOX.REGISTRATION_STATUS, form.getRegistrationStatus())
+                .set(CHARGE_BOX.NOTE, form.getNote())
+                .set(CHARGE_BOX.ADMIN_ADDRESS, form.getAdminAddress())
+                .set(CHARGE_BOX.ADDRESS_PK, addressPk)
+                .where(CHARGE_BOX.CHARGE_BOX_PK.equal(form.getChargeBoxPk()))
+                .execute();
     }
 
     private void deleteChargePointInternal(DSLContext ctx, int chargeBoxPk) {
         ctx.delete(CHARGE_BOX)
-           .where(CHARGE_BOX.CHARGE_BOX_PK.equal(chargeBoxPk))
-           .execute();
+                .where(CHARGE_BOX.CHARGE_BOX_PK.equal(chargeBoxPk))
+                .execute();
+    }
+
+    @Override
+    public List<ChargePoint.Overview> getChargePointOverviews() {
+        return ctx.select(
+                CHARGE_BOX.CHARGE_BOX_PK,
+                CHARGE_BOX.CHARGE_BOX_ID,
+                CHARGE_BOX.DESCRIPTION,
+                CHARGE_BOX.OCPP_PROTOCOL,
+                CHARGE_BOX.LAST_HEARTBEAT_TIMESTAMP
+        ).from(CHARGE_BOX).fetch()
+                .map(r -> ChargePoint.Overview.builder()
+                        .chargeBoxPk(r.value1())
+                        .chargeBoxId(r.value2())
+                        .description(r.value3())
+                        .ocppProtocol(r.value4())
+                        .lastHeartbeatTimestampDT(r.value5())
+                        .lastHeartbeatTimestamp(DateTimeUtils.humanize(r.value5()))
+                        .build()
+                );
     }
 }
