@@ -53,12 +53,7 @@ public interface ChargePointRepository {
     List<Integer> getNonZeroConnectorIds(String chargeBoxId);
 
     void addChargePointList(List<String> chargeBoxIdList);
-
     int addChargePoint(ChargePointForm form);
-
     void updateChargePoint(ChargePointForm form);
-
     void deleteChargePoint(int chargeBoxPk);
-
-    List<ChargePoint.Overview> getChargePointOverviews();
 }

@@ -67,6 +67,7 @@ import static jooq.steve.db.tables.ConnectorStatus.CONNECTOR_STATUS;
 public class ChargePointRepositoryImpl implements ChargePointRepository {
 
     private final DSLContext ctx;
+
     private final AddressRepository addressRepository;
 
     @Autowired
@@ -369,25 +370,5 @@ public class ChargePointRepositoryImpl implements ChargePointRepository {
         ctx.delete(CHARGE_BOX)
                 .where(CHARGE_BOX.CHARGE_BOX_PK.equal(chargeBoxPk))
                 .execute();
-    }
-
-    @Override
-    public List<ChargePoint.Overview> getChargePointOverviews() {
-        return ctx.select(
-                CHARGE_BOX.CHARGE_BOX_PK,
-                CHARGE_BOX.CHARGE_BOX_ID,
-                CHARGE_BOX.DESCRIPTION,
-                CHARGE_BOX.OCPP_PROTOCOL,
-                CHARGE_BOX.LAST_HEARTBEAT_TIMESTAMP
-        ).from(CHARGE_BOX).fetch()
-                .map(r -> ChargePoint.Overview.builder()
-                        .chargeBoxPk(r.value1())
-                        .chargeBoxId(r.value2())
-                        .description(r.value3())
-                        .ocppProtocol(r.value4())
-                        .lastHeartbeatTimestampDT(r.value5())
-                        .lastHeartbeatTimestamp(DateTimeUtils.humanize(r.value5()))
-                        .build()
-                );
     }
 }
