@@ -13,7 +13,7 @@ class ChargePointsApiController {
     private lateinit var repo: ChargePointRepositoryV2
 
     @GetMapping("/api/chargepoints")
-    fun getAll(): MutableList<ChargePoint> {
+    fun getAll(): List<ChargePoint> {
         return repo.findChargePoints()
     }
 }
