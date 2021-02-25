@@ -29,9 +29,13 @@ public class ChargePointRepositoryV2 {
                 .map(r ->
                         new ChargePoint(
                                 r.getKey().get(CHARGE_BOX.CHARGE_BOX_ID),
-                                r.getValue().stream().map(cr ->
-                                        new Connector(cr.get(CONNECTOR.CONNECTOR_ID))
-                                ).collect(Collectors.toList()),
+                                r.getValue()
+                                        .stream()
+                                        .filter(cr ->
+                                                cr.get(CONNECTOR.CONNECTOR_ID) != null)
+                                        .map(cr ->
+                                                new Connector(cr.get(CONNECTOR.CONNECTOR_ID))
+                                        ).collect(Collectors.toList()),
                                 r.getKey().get(CHARGE_BOX.LOCATION_LATITUDE),
                                 r.getKey().get(CHARGE_BOX.LOCATION_LONGITUDE))
                 ).collect(Collectors.toList());
