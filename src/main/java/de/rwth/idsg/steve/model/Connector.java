@@ -2,9 +2,9 @@ package de.rwth.idsg.steve.model;
 
 public class Connector {
 
-    public final int id;
+    public final Integer id;
 
-    public Connector(int id) {
+    public Connector(Integer id) {
         this.id = id;
     }
 }
