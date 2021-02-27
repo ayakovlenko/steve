@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import static jooq.steve.db.Tables.CHARGE_BOX;
 import static jooq.steve.db.Tables.CONNECTOR;
+import static jooq.steve.db.Tables.CONNECTOR_STATUS;
 
 @Repository
 public class ChargePointRepositoryV2 {
@@ -27,6 +28,8 @@ public class ChargePointRepositoryV2 {
                 .from(CHARGE_BOX)
                 .leftJoin(CONNECTOR)
                 .on(CHARGE_BOX.CHARGE_BOX_ID.eq(CONNECTOR.CHARGE_BOX_ID))
+                .leftJoin(CONNECTOR_STATUS)
+                .on(CONNECTOR_STATUS.CONNECTOR_PK.eq(CONNECTOR.CONNECTOR_PK))
                 .fetchGroups(CHARGE_BOX)
                 .entrySet()
                 .stream()
@@ -43,8 +46,16 @@ public class ChargePointRepositoryV2 {
                         .stream()
                         .filter(cr ->
                                 cr.get(CONNECTOR.CONNECTOR_ID) != null)
-                        .map(cr ->
-                                new Connector(cr.get(CONNECTOR.CONNECTOR_ID))
+                        .map(ChargePointRepositoryV2::toModel
                         ).collect(Collectors.toList()));
+    }
+
+    private static Connector toModel(Record cr) {
+        var id = cr.get(CONNECTOR.CONNECTOR_ID);
+        var status = cr.get(CONNECTOR_STATUS.STATUS);
+        var statusTimestamp = cr.get(CONNECTOR_STATUS.STATUS_TIMESTAMP);
+        var errorCode = cr.get(CONNECTOR_STATUS.ERROR_CODE);
+        var errorInfo = cr.get(CONNECTOR_STATUS.ERROR_INFO);
+        return new Connector(id, status, statusTimestamp, errorCode, errorInfo);
     }
 }
