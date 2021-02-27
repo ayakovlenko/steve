@@ -28,17 +28,17 @@ public class ChargePointRepositoryV2 {
     public List<ChargePoint> findChargePoints() {
         var latestConnectorStatus =
                 ctx.select(
-                        CONNECTOR_STATUS.CONNECTOR_PK,
-                        max(CONNECTOR_STATUS.STATUS_TIMESTAMP))
+                        CONNECTOR_STATUS.CONNECTOR_PK.as("connector_pk"),
+                        max(CONNECTOR_STATUS.STATUS_TIMESTAMP).as("connector_status_timestamp"))
                         .from(CONNECTOR_STATUS)
                         .groupBy(CONNECTOR_STATUS.CONNECTOR_PK)
                         .asTable();
 
         var latestConnectorStatusJoinCond =
                 CONNECTOR.CONNECTOR_PK.eq(
-                        latestConnectorStatus.field(0, Integer.class))
+                        latestConnectorStatus.field("connector_pk", Integer.class))
                         .and(CONNECTOR_STATUS.STATUS_TIMESTAMP.eq(
-                                latestConnectorStatus.field(1, DateTime.class)));
+                                latestConnectorStatus.field("connector_status_timestamp", DateTime.class)));
 
         return ctx.select()
                 .from(CHARGE_BOX)
