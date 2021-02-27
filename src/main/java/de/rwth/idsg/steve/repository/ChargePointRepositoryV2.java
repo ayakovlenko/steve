@@ -3,6 +3,7 @@ package de.rwth.idsg.steve.repository;
 import de.rwth.idsg.steve.model.ChargePoint;
 import de.rwth.idsg.steve.model.Connector;
 import jooq.steve.db.tables.records.ChargeBoxRecord;
+import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import static jooq.steve.db.Tables.CHARGE_BOX;
 import static jooq.steve.db.Tables.CONNECTOR;
 import static jooq.steve.db.Tables.CONNECTOR_STATUS;
+import static org.jooq.impl.DSL.max;
 
 @Repository
 public class ChargePointRepositoryV2 {
@@ -24,19 +26,37 @@ public class ChargePointRepositoryV2 {
     private DSLContext ctx;
 
     public List<ChargePoint> findChargePoints() {
+        var latestConnectorStatus =
+                ctx.select(
+                        CONNECTOR_STATUS.CONNECTOR_PK,
+                        max(CONNECTOR_STATUS.STATUS_TIMESTAMP))
+                        .from(CONNECTOR_STATUS)
+                        .groupBy(CONNECTOR_STATUS.CONNECTOR_PK)
+                        .asTable();
+
+        var latestConnectorStatusJoinCond =
+                CONNECTOR.CONNECTOR_PK.eq(
+                        latestConnectorStatus.field(0, Integer.class))
+                        .and(CONNECTOR_STATUS.STATUS_TIMESTAMP.eq(
+                                latestConnectorStatus.field(1, DateTime.class)));
+
         return ctx.select()
                 .from(CHARGE_BOX)
                 .leftJoin(CONNECTOR)
                 .on(CHARGE_BOX.CHARGE_BOX_ID.eq(CONNECTOR.CHARGE_BOX_ID))
                 .leftJoin(CONNECTOR_STATUS)
                 .on(CONNECTOR_STATUS.CONNECTOR_PK.eq(CONNECTOR.CONNECTOR_PK))
+                .join(latestConnectorStatus)
+                .on(latestConnectorStatusJoinCond)
+                .groupBy(CHARGE_BOX.CHARGE_BOX_ID, CONNECTOR.CONNECTOR_PK)
                 .fetchGroups(CHARGE_BOX)
                 .entrySet()
                 .stream()
-                .map(ChargePointRepositoryV2::toModel).collect(Collectors.toList());
+                .map(ChargePointRepositoryV2::toChargePointModel)
+                .collect(Collectors.toList());
     }
 
-    private static ChargePoint toModel(Map.Entry<ChargeBoxRecord, Result<Record>> r) {
+    private static ChargePoint toChargePointModel(Map.Entry<ChargeBoxRecord, Result<Record>> r) {
         return new ChargePoint(
                 r.getKey().get(CHARGE_BOX.CHARGE_BOX_ID),
                 r.getKey().get(CHARGE_BOX.REGISTRATION_STATUS),
@@ -46,11 +66,11 @@ public class ChargePointRepositoryV2 {
                         .stream()
                         .filter(cr ->
                                 cr.get(CONNECTOR.CONNECTOR_ID) != null)
-                        .map(ChargePointRepositoryV2::toModel
-                        ).collect(Collectors.toList()));
+                        .map(ChargePointRepositoryV2::toConnectorModel)
+                        .collect(Collectors.toList()));
     }
 
-    private static Connector toModel(Record cr) {
+    private static Connector toConnectorModel(Record cr) {
         var id = cr.get(CONNECTOR.CONNECTOR_ID);
         var status = cr.get(CONNECTOR_STATUS.STATUS);
         var statusTimestamp = cr.get(CONNECTOR_STATUS.STATUS_TIMESTAMP);
