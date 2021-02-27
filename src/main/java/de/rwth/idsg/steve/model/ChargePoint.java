@@ -11,7 +11,8 @@ public class ChargePoint {
 
     public final String id;
 
-    public final List<Connector> connectors;
+    @JsonProperty("registration_status")
+    public final String registrationStatus;
 
     @JsonProperty("lat")
     public final BigDecimal latitude;
@@ -19,13 +20,17 @@ public class ChargePoint {
     @JsonProperty("long")
     public final BigDecimal longtitude;
 
+    public final List<Connector> connectors;
+
     public ChargePoint(String id,
-                       List<Connector> connectors,
+                       String registrationStatus,
                        BigDecimal latitude,
-                       BigDecimal longtitude) {
+                       BigDecimal longtitude,
+                       List<Connector> connectors) {
         this.id = id;
-        this.connectors = connectors;
+        this.registrationStatus = registrationStatus;
         this.latitude = latitude;
         this.longtitude = longtitude;
+        this.connectors = connectors;
     }
 }

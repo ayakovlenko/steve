@@ -11,6 +11,7 @@ import java.util.List;
 @RestController
 public class ChargePointsApiController {
 
+    // TODO: proxy through a service layer
     @Autowired
     private ChargePointRepositoryV2 repo;
 
