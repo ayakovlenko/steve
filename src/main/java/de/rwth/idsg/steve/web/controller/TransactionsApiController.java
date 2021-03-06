@@ -55,7 +55,7 @@ public class TransactionsApiController {
         var activeTransactionsCount = getActiveTransactions(req.chargeBoxId, req.connectorId).size();
         if (activeTransactionsCount > 0) {
             return new ResponseEntity<>(
-                    new RemoteStartTransactionResponse(null, "NO_RESPONSE"),
+                    new RemoteStartTransactionResponse(null, "FOUND_ACTIVE_TRANSACTIONS"),
                     HttpStatus.EXPECTATION_FAILED
             );
         }
