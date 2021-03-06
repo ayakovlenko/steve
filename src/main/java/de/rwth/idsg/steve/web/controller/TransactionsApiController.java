@@ -8,6 +8,8 @@ import de.rwth.idsg.steve.ocpp.RequestResult;
 import de.rwth.idsg.steve.repository.TaskStore;
 import de.rwth.idsg.steve.repository.TransactionRepository;
 import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
+import de.rwth.idsg.steve.repository.dto.Transaction;
+import de.rwth.idsg.steve.repository.dto.TransactionDetails;
 import de.rwth.idsg.steve.service.ChargePointService16_Client;
 import de.rwth.idsg.steve.service.TransactionStopService;
 import de.rwth.idsg.steve.web.dto.ocpp.RemoteStartTransactionParams;
@@ -27,6 +29,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @Validated
@@ -49,7 +52,13 @@ public class TransactionsApiController {
     @PostMapping(BASE_ENDPOINT)
     ResponseEntity<RemoteStartTransactionResponse> startTransaction(
             @Valid @RequestBody RemoteStartTransactionRequest req) {
-        // TODO: add precondition to check if there are active transactions already
+        var activeTransactionsCount = getActiveTransactions(req.chargeBoxId, req.connectorId).size();
+        if (activeTransactionsCount > 0) {
+            return new ResponseEntity<>(
+                    new RemoteStartTransactionResponse(null, "NO_RESPONSE"),
+                    HttpStatus.EXPECTATION_FAILED
+            );
+        }
 
         var params = new RemoteStartTransactionParams();
         var cps = List.of(new ChargePointSelect(OcppTransport.JSON, req.chargeBoxId));
@@ -61,12 +70,12 @@ public class TransactionsApiController {
         var result = (RequestResult) waitTask(task).get(req.chargeBoxId);
         if (result.getResponse() == null) {
             return new ResponseEntity<>(
-                    new RemoteStartTransactionResponse(null),
+                    new RemoteStartTransactionResponse(null, "NO_RESPONSE_FROM_CHARGE_POINT"),
                     HttpStatus.PRECONDITION_FAILED
             );
         } else {
             return new ResponseEntity<>(
-                    new RemoteStartTransactionResponse(result.getResponse()),
+                    new RemoteStartTransactionResponse(result.getResponse(), null),
                     HttpStatus.OK
             );
         }
@@ -121,7 +130,8 @@ public class TransactionsApiController {
     @AllArgsConstructor
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private static class RemoteStartTransactionResponse {
-        private String response;
+        private String response; // TODO: rename to status
+        private String error;
     }
 
     @Data
@@ -140,11 +150,22 @@ public class TransactionsApiController {
         private String error;
     }
 
+    // ---
+
     @SuppressWarnings("rawtypes")
     private Map waitTask(@SuppressWarnings("rawtypes") CommunicationTask task) {
         //noinspection StatementWithEmptyBody
         while (!task.isFinished() || task.getResultMap().size() > 1) {
         }
         return task.getResultMap();
+    }
+
+    private List<Transaction> getActiveTransactions(String chargeBoxId, int connectorId) {
+        return transactionRepository.getActiveTransactionIds(chargeBoxId)
+                .stream()
+                .map(transactionRepository::getDetails)
+                .map(TransactionDetails::getTransaction)
+                .filter(tx -> tx.getConnectorId() == connectorId)
+                .collect(Collectors.toList());
     }
 }
